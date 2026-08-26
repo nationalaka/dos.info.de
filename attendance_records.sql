@@ -2,6 +2,9 @@
 alter table if exists public.student_requests
   add column if not exists reference_code text,
   add column if not exists transfer_info text not null default '',
+  add column if not exists receipt text not null default '',
+  add column if not exists payment_method text not null default '',
+  add column if not exists payment_amount numeric not null default 0,
   add column if not exists payment_status text not null default 'pending' check (payment_status in ('pending', 'paid')),
   add column if not exists payment_date date;
 
