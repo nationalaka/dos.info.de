@@ -100,6 +100,30 @@ function mapInstructorRow(r) {
   };
 }
 
+function attendanceLabel(status) {
+  return ({ present: "حضور", late: "تأخير", absent: "غياب" }[status] || status || "—");
+}
+
+function attendanceTone(status) {
+  return status === "present" ? "green" : status === "late" ? "gold" : "red";
+}
+
+function mapAttendanceRow(row) {
+  return { id: row.id, studentProfileId: row.student_profile_id, instructorProfileId: row.instructor_profile_id, level: row.level, status: row.status, sessionDate: row.session_date, sessionTime: row.session_time, notes: row.notes || "" };
+}
+
+const LIBRARY_CATEGORIES = [
+  { value: "course", label: "كتاب الكورس" },
+  { value: "exercises", label: "كتاب التدريبات" },
+  { value: "listening", label: "السماع" },
+  { value: "listening_books", label: "كتب السماع" },
+  { value: "support", label: "كتب تقوية" },
+];
+
+function mapLibraryRow(row) {
+  return { id: row.id, level: row.level, category: row.category, title: row.title, url: row.url, instructorProfileId: row.instructor_profile_id };
+}
+
 const REQUEST_TYPES = [
   { value: "absence", label: "طلب غياب" },
   { value: "late", label: "طلب تأخير" },
@@ -989,7 +1013,7 @@ function FinancialEntryCard({ type, title, color, items, form, setForm, students
 
 function AdminDashboard({
   students, instructors, adminAccounts, activityLog, profile,
-  requests, refreshStudents, refreshInstructors, refreshAdmins, refreshLog, onUpdateRequest,
+  requests, refreshStudents, refreshInstructors, refreshAdmins, refreshLog, onUpdateRequest, onDeleteRequest,
   addLog, onLogout,
 }) {
   const [query, setQuery] = useState("");
@@ -998,7 +1022,7 @@ function AdminDashboard({
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [invoiceHtml, setInvoiceHtml] = useState(() => loadLS("invoiceHtml", null)); // uploaded invoice template (HTML string)
-  const VALID_VIEWS = ["dashboard", "financial", "invoice", "accounts", "instructors", "log", "student"];
+  const VALID_VIEWS = ["dashboard", "requests", "financial", "invoice", "accounts", "instructors", "log", "student"];
   function readViewFromHash() {
     const h = (window.location.hash || "").replace("#", "").trim();
     return VALID_VIEWS.includes(h) ? h : "dashboard";
@@ -1418,6 +1442,7 @@ function AdminDashboard({
       {adminView === "invoice" && (
         <InvoicePage invoiceHtml={invoiceHtml} onUpload={handleInvoiceUpload} onBack={() => goTo("dashboard")} />
       )}
+      {adminView === "requests" && <RequestsPage requests={requests} onUpdate={onUpdateRequest} onDelete={onDeleteRequest} onBack={() => goTo("dashboard")} />}
       {adminView === "accounts" && (
         <AdminAccountsPage
           adminAccounts={adminAccounts}
@@ -1474,7 +1499,7 @@ function AdminDashboard({
               Studentenverwaltung — Erstellen, bearbeiten und verwalten Sie alle DOS-Studierenden.
             </p>
           </div>
-          <RequestInbox requests={requests} onUpdate={onUpdateRequest} />
+            <button onClick={() => goTo("requests")} className="mb-4 px-4 py-2 rounded-lg text-sm font-semibold" style={{ backgroundColor: COLORS.navy, color: "#fff" }}>فتح صفحة الطلبات</button>
 
           {/* stat cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
@@ -2180,6 +2205,23 @@ function InfoCard({ labelAr, labelDe, children }) {
   );
 }
 
+function LibraryPage({ books, initialLevel, editable, onAdd, onDelete }) {
+  const [level, setLevel] = useState(initialLevel || LEVELS[0]);
+  const [form, setForm] = useState({ category: "course", title: "", url: "" });
+  const visibleBooks = books.filter((book) => book.level === level);
+  async function submit(event) {
+    event.preventDefault();
+    if (!form.title.trim() || !form.url.trim()) return;
+    await onAdd({ ...form, level });
+    setForm({ ...form, title: "", url: "" });
+  }
+  return <InfoCard labelAr="مكتبة المستوى" labelDe="Kursbibliothek">
+    <div className="flex flex-col sm:flex-row gap-2 mb-4"><label className="text-sm self-center" style={{ color: COLORS.subtle }}>اختر المستوى</label><select className={inputCls} style={inputStyle} value={level} onChange={(e) => setLevel(e.target.value)}>{LEVELS.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+    {editable && <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4"><select className={inputCls} style={inputStyle} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{LIBRARY_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select><input required className={inputCls} style={inputStyle} placeholder="اسم الكتاب" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /><input required type="url" className={inputCls} style={inputStyle} placeholder="رابط الكتاب" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} /><button type="submit" className="sm:col-span-3 px-4 py-2 rounded-lg text-sm font-semibold" style={{ backgroundColor: COLORS.navy, color: "#fff" }}>إضافة إلى المكتبة</button></form>}
+    <div className="space-y-2">{visibleBooks.length === 0 ? <p className="text-sm" style={{ color: COLORS.subtle }}>لا توجد كتب مضافة لهذا المستوى بعد.</p> : LIBRARY_CATEGORIES.map((category) => { const categoryBooks = visibleBooks.filter((book) => book.category === category.value); return categoryBooks.length ? <div key={category.value} className="border-t pt-2" style={{ borderColor: COLORS.border }}><p className="text-xs font-semibold mb-1" style={{ color: COLORS.subtle }}>{category.label}</p>{categoryBooks.map((book) => <div key={book.id} className="flex items-center justify-between gap-2 py-1"><a href={book.url} target="_blank" rel="noreferrer" className="text-sm font-semibold underline" style={{ color: COLORS.navy }}>{book.title}</a>{editable && <button type="button" onClick={() => onDelete(book.id)} className="text-xs" style={{ color: COLORS.red }}>حذف</button>}</div>)}</div> : null; })}</div>
+  </InfoCard>;
+}
+
 function WalletCard({ student }) {
   return (
     <div
@@ -2233,8 +2275,9 @@ function StudentRequests({ student, requests, onSubmit }) {
       <div className="mt-5 space-y-2">
         {requests.length === 0 ? <p className="text-xs" style={{ color: COLORS.subtle }}>لا توجد طلبات سابقة.</p> : requests.map((request) => (
           <div key={request.id} className="border-t pt-2" style={{ borderColor: COLORS.border }}>
-            <div className="flex justify-between gap-2 text-xs"><strong>{REQUEST_TYPES.find((type) => type.value === request.request_type)?.label || request.request_type}</strong><span>{request.status}</span></div>
+            <div className="flex justify-between gap-2 text-xs"><strong>{REQUEST_TYPES.find((type) => type.value === request.request_type)?.label || request.request_type}</strong><span>{request.reference_code || `REF_${student.id}`}</span></div>
             <p className="text-xs mt-1" style={{ color: COLORS.subtle }}>{request.details}</p>
+            {request.request_type === "refund" && <div className="mt-2 text-xs space-y-1" style={{ color: COLORS.subtle }}><div>حالة السداد: {request.payment_status === "paid" ? "مسدد" : "معلق"}</div>{request.transfer_info && <div>بيانات التحويل: {request.transfer_info}</div>}{request.payment_date && <div>تاريخ السداد: {request.payment_date}</div>}</div>}
           </div>
         ))}
       </div>
@@ -2242,23 +2285,71 @@ function StudentRequests({ student, requests, onSubmit }) {
   );
 }
 
-function RequestInbox({ requests, onUpdate }) {
+function RequestInbox({ requests, onUpdate, onDelete }) {
+  const [notes, setNotes] = useState({});
+
   return (
     <div className="rounded-2xl border p-5 mb-5" style={{ borderColor: COLORS.border, backgroundColor: COLORS.panel }}>
       <h2 className="text-base font-semibold mb-4" style={{ color: COLORS.ink, fontFamily: F_DISPLAY }}>طلبات الطلاب — Studentenanfragen</h2>
       {requests.length === 0 ? <p className="text-sm" style={{ color: COLORS.subtle }}>لا توجد طلبات جديدة.</p> : <div className="space-y-3">{requests.map((request) => (
         <div key={request.id} className="border rounded-xl p-3" style={{ borderColor: COLORS.border }}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><strong className="text-sm">{request.student_name || "طالب"}</strong><span className="text-xs mr-2" style={{ color: COLORS.subtle }}>{REQUEST_TYPES.find((type) => type.value === request.request_type)?.label || request.request_type}</span></div><select className="rounded-lg border px-2 py-1 text-xs" value={request.status} onChange={(e) => onUpdate(request.id, { status: e.target.value })}><option value="pending">قيد الانتظار</option><option value="reviewing">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option></select></div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div><strong className="text-sm">{request.student_name || "طالب"}</strong><span className="text-xs mr-2" style={{ color: COLORS.subtle }}>{request.reference_code || `REF_${request.student_code || "STUDENT"}`} · {REQUEST_TYPES.find((type) => type.value === request.request_type)?.label || request.request_type}</span></div><div className="flex items-center gap-2"><select className="rounded-lg border px-2 py-1 text-xs" value={request.status} onChange={(e) => onUpdate(request.id, { status: e.target.value })}><option value="pending">قيد الانتظار</option><option value="reviewing">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option></select><button type="button" onClick={() => { if (window.confirm("هل تريد حذف هذا الطلب نهائياً؟")) onDelete(request.id); }} className="px-2 py-1 rounded-lg text-xs font-semibold" style={{ color: COLORS.red, border: `1px solid ${COLORS.red}` }}>حذف</button></div></div>
           <p className="text-sm mt-2" style={{ color: COLORS.ink }}>{request.details}</p>
-          {request.admin_note && <p className="text-xs mt-1" style={{ color: COLORS.subtle }}>ملاحظة: {request.admin_note}</p>}
+          <div className="mt-3 flex flex-col sm:flex-row gap-2"><input className={`${inputCls} flex-1`} style={inputStyle} value={notes[request.id] !== undefined ? notes[request.id] : (request.admin_note || "")} onChange={(e) => setNotes({ ...notes, [request.id]: e.target.value })} placeholder="اكتب تعليق المحاضر أو سبب القرار" /><button type="button" onClick={() => onUpdate(request.id, { admin_note: notes[request.id] || "" })} className="px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: COLORS.navy, color: "#fff" }}>حفظ التعليق</button></div>
+          {request.request_type === "refund" && <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3"><select className={inputCls} style={inputStyle} value={request.payment_status || "pending"} onChange={(e) => onUpdate(request.id, { payment_status: e.target.value })}><option value="pending">السداد معلق</option><option value="paid">تم السداد</option></select><input type="date" className={inputCls} style={inputStyle} value={request.payment_date || ""} onChange={(e) => onUpdate(request.id, { payment_date: e.target.value })} /><input className={inputCls} style={inputStyle} value={request.transfer_info || ""} onChange={(e) => onUpdate(request.id, { transfer_info: e.target.value })} placeholder="بيانات التحويل للطالب" /></div>}
         </div>
       ))}</div>}
     </div>
   );
 }
 
-function StudentPortal({ student, requests, onSubmitRequest, onLogout }) {
+function RequestsPage({ requests, onUpdate, onDelete, onBack }) {
+  return <div className="max-w-5xl mx-auto px-5 md:px-8 py-8"><button onClick={onBack} className="flex items-center gap-1.5 text-sm font-semibold mb-5" style={{ color: COLORS.navy }}><Icon.back /> رجوع</button><RequestInbox requests={requests} onUpdate={onUpdate} onDelete={onDelete} /></div>;
+}
+
+function AttendanceSummary({ records, studentLevel, editable, onSave, saving }) {
+  const absenceCount = records.filter((record) => record.status === "absent" && record.level === studentLevel).length;
+  const [form, setForm] = useState({ status: "present", sessionDate: new Date().toISOString().slice(0, 10), sessionTime: new Date().toTimeString().slice(0, 5), notes: "" });
+
+  async function submit(event) {
+    event.preventDefault();
+    await onSave({ ...form, level: studentLevel });
+    setForm((current) => ({ ...current, notes: "" }));
+  }
+
+  return (
+    <InfoCard labelAr="الحضور والغياب" labelDe="Anwesenheit">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span className="text-sm" style={{ color: absenceCount > 2 ? COLORS.red : COLORS.ink }}>غياب المستوى {studentLevel}: {absenceCount} / 2 محاضرة</span>
+        <Badge tone={absenceCount > 2 ? "red" : "green"}>{absenceCount > 2 ? "تجاوز الحد" : "ضمن المسموح"}</Badge>
+      </div>
+      {editable && (
+        <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+          <select className={inputCls} style={inputStyle} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+            <option value="present">حضور — Anwesenheit</option><option value="absent">غياب — Abwesend</option><option value="late">تأخير — Verspätet</option>
+          </select>
+          <input required type="date" className={inputCls} style={inputStyle} value={form.sessionDate} onChange={(e) => setForm({ ...form, sessionDate: e.target.value })} />
+          <input required type="time" className={inputCls} style={inputStyle} value={form.sessionTime} onChange={(e) => setForm({ ...form, sessionTime: e.target.value })} />
+          <input className={inputCls} style={inputStyle} placeholder="ملاحظة اختيارية" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          <button type="submit" disabled={saving} className="sm:col-span-2 px-4 py-2 rounded-lg text-sm font-semibold" style={{ backgroundColor: COLORS.navy, color: "#fff" }}>{saving ? "جارٍ الحفظ..." : "تسجيل الحالة"}</button>
+        </form>
+      )}
+      <div className="space-y-2">
+        {records.length === 0 ? <p className="text-sm" style={{ color: COLORS.subtle }}>لا توجد سجلات حضور بعد.</p> : records.map((record) => (
+          <div key={record.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t pt-2" style={{ borderColor: COLORS.border }}>
+            <span className="text-sm" style={{ color: COLORS.ink }}>{record.sessionDate} · {record.sessionTime || "—"}{record.notes ? ` · ${record.notes}` : ""}</span>
+            <Badge tone={attendanceTone(record.status)}>{attendanceLabel(record.status)}</Badge>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs mt-3" style={{ color: absenceCount > 2 ? COLORS.red : COLORS.subtle }}>تنبيه: لا يُسمح بأكثر من محاضرتين غياب في المستوى الواحد.</p>
+    </InfoCard>
+  );
+}
+
+function StudentPortal({ student, attendance, libraryBooks, requests, onSubmitRequest, onLogout }) {
   const [dir, setDir] = useState("rtl");
+  const [showLibrary, setShowLibrary] = useState(false);
   const fin = computeStudentFinance(student);
   const balance = fin.balance;
   const discounted = fin.afterDiscount;
@@ -2269,6 +2360,7 @@ function StudentPortal({ student, requests, onSubmitRequest, onLogout }) {
       <div className="sticky top-0 z-30 flex items-center justify-between px-5 md:px-8 py-3.5 border-b" style={{ backgroundColor: COLORS.navyDeep, borderColor: COLORS.navyMid }}>
         <LogoMark height={28} />
         <div className="flex items-center gap-2">
+          <button onClick={() => setShowLibrary((visible) => !visible)} className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-white/10" style={{ color: "#E7ECF3", fontFamily: F_BODY }}>المكتبة</button>
           <button
             onClick={() => setDir((d) => (d === "rtl" ? "ltr" : "rtl"))}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-white/10"
@@ -2288,6 +2380,7 @@ function StudentPortal({ student, requests, onSubmitRequest, onLogout }) {
       </div>
 
       <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
+        {showLibrary && <div className="mb-4"><LibraryPage books={libraryBooks} initialLevel={student.level} /></div>}
         <div className="mb-7">
           <h1 className="text-2xl md:text-3xl font-semibold" style={{ color: COLORS.ink, fontFamily: F_DISPLAY }}>
             Willkommen bei DOS, {student.name.split(" ")[0]}!
@@ -2403,6 +2496,10 @@ function StudentPortal({ student, requests, onSubmitRequest, onLogout }) {
         </div>
 
         <div className="mt-4">
+          <AttendanceSummary records={attendance} studentLevel={student.level} />
+        </div>
+
+        <div className="mt-4">
           <InfoCard labelAr="المستحقات وموعد السداد" labelDe="Offene Beträge und Fälligkeit">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <span className="text-sm" style={{ color: COLORS.subtle }}>إجمالي المتبقي — Offener Gesamtbetrag</span>
@@ -2447,10 +2544,13 @@ function StudentPortal({ student, requests, onSubmitRequest, onLogout }) {
 
 /* --------------------------------- Instructor Portal --------------------------------- */
 
-function InstructorPortal({ profile, instructor, students, requests, refreshMyStudents, refreshInstructor, onUpdateRequest, onLogout }) {
+function InstructorPortal({ profile, instructor, students, attendance, libraryBooks, refreshMyStudents, refreshInstructor, refreshAttendance, refreshLibrary, requests, onUpdateRequest, onDeleteRequest, onLogout }) {
   const [dir, setDir] = useState("rtl");
+  const [studentQuery, setStudentQuery] = useState("");
+  const [showRequests, setShowRequests] = useState(false);
   const [savingId, setSavingId] = useState(null);
   const [msg, setMsg] = useState("");
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => instructor || {});
 
@@ -2489,6 +2589,19 @@ function InstructorPortal({ profile, instructor, students, requests, refreshMySt
     }
   }
 
+  async function saveAttendance(student, record) {
+    setAttendanceSaving(true);
+    setMsg("");
+    try {
+      const { error } = await supabaseClient.from("attendance_records").insert({ student_profile_id: student.profileId, instructor_profile_id: profile.id, level: record.level, status: record.status, session_date: record.sessionDate, session_time: record.sessionTime, notes: record.notes.trim() });
+      if (error) throw new Error(error.message);
+      await refreshAttendance();
+      setMsg("تم تسجيل حالة الحضور — Anwesenheit gespeichert.");
+    } catch (e) {
+      setMsg(e.message || "تعذّر حفظ سجل الحضور.");
+    } finally { setAttendanceSaving(false); }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.bg }} dir={dir}>
       <div className="sticky top-0 z-30 flex items-center justify-between px-5 md:px-8 py-3.5 border-b" style={{ backgroundColor: COLORS.navyDeep, borderColor: COLORS.navyMid }}>
@@ -2517,7 +2630,9 @@ function InstructorPortal({ profile, instructor, students, requests, refreshMySt
       </div>
 
       <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
-        <RequestInbox requests={requests} onUpdate={onUpdateRequest} />
+          <button onClick={() => setShowRequests((visible) => !visible)} className="mb-4 px-4 py-2 rounded-lg text-sm font-semibold" style={{ backgroundColor: COLORS.navy, color: "#fff" }}>{showRequests ? "إغلاق الطلبات" : "فتح صفحة الطلبات"}</button>
+          {showRequests && <RequestsPage requests={requests} onUpdate={onUpdateRequest} onDelete={onDeleteRequest} onBack={() => setShowRequests(false)} />}
+          <div className="mb-4"><LibraryPage books={libraryBooks} initialLevel={students[0]?.level} editable onAdd={async (book) => { await supabaseClient.from("course_library").insert({ level: book.level, category: book.category, title: book.title.trim(), url: book.url.trim(), instructor_profile_id: profile.id }); await refreshLibrary(); }} onDelete={async (id) => { await supabaseClient.from("course_library").delete().eq("id", id); await refreshLibrary(); }} /></div>
         <div className="mb-7">
           <h1 className="text-2xl md:text-3xl font-semibold" style={{ color: COLORS.ink, fontFamily: F_DISPLAY }}>
             Willkommen, {profile.full_name}!
@@ -2525,6 +2640,7 @@ function InstructorPortal({ profile, instructor, students, requests, refreshMySt
           <p className="text-sm mt-1" style={{ color: COLORS.subtle, fontFamily: F_AR, direction: "rtl" }}>
             طلابك المسندون إليك ({students.length})
           </p>
+          <input className={`${inputCls} mt-3 max-w-xl`} style={inputStyle} value={studentQuery} onChange={(e) => setStudentQuery(e.target.value)} placeholder="ابحث بكود الطالب أو اسمه أو البريد الإلكتروني" />
         </div>
 
         {msg && (
@@ -2563,8 +2679,14 @@ function InstructorPortal({ profile, instructor, students, requests, refreshMySt
         )}
 
         <div className="space-y-4">
-          {students.map((s) => (
-            <InstructorStudentCard key={s.profileId} student={s} saving={savingId === s.profileId} onSaveGrades={saveGrades} />
+          {students.filter((s) => {
+            const query = studentQuery.trim().toLowerCase();
+            return !query || [s.id, s.name, s.nameAr, s.contactEmail, s.level].filter(Boolean).some((value) => String(value).toLowerCase().includes(query));
+          }).map((s) => (
+            <div key={s.profileId} className="space-y-4">
+              <InstructorStudentCard student={s} saving={savingId === s.profileId} onSaveGrades={saveGrades} />
+              <AttendanceSummary records={attendance.filter((record) => record.studentProfileId === s.profileId)} studentLevel={s.level} editable onSave={(record) => saveAttendance(s, record)} saving={attendanceSaving} />
+            </div>
           ))}
           {students.length === 0 && (
             <div className="rounded-2xl border p-8 text-center" style={{ borderColor: COLORS.border, backgroundColor: COLORS.panel }}>
@@ -2645,6 +2767,8 @@ function App() {
   // instructor-scope data
   const [myStudents, setMyStudents] = useState([]);
   const [myInstructor, setMyInstructor] = useState(null);
+  const [attendance, setAttendance] = useState([]);
+  const [libraryBooks, setLibraryBooks] = useState([]);
 
   // student-scope data
   const [myRecord, setMyRecord] = useState(null);
@@ -2674,6 +2798,17 @@ function App() {
     const { data, error } = await supabaseClient.from("v_instructors").select("*").eq("profile_id", instructorProfileId).single();
     if (!error && data) setMyInstructor(mapInstructorRow(data));
   }
+  async function refreshAttendance(filters = {}) {
+    let query = supabaseClient.from("attendance_records").select("*").order("session_date", { ascending: false }).order("session_time", { ascending: false });
+    if (filters.studentProfileId) query = query.eq("student_profile_id", filters.studentProfileId);
+    if (filters.instructorProfileId) query = query.eq("instructor_profile_id", filters.instructorProfileId);
+    const { data, error } = await query;
+    if (!error && data) setAttendance(data.map(mapAttendanceRow));
+  }
+  async function refreshLibrary() {
+    const { data, error } = await supabaseClient.from("course_library").select("*").order("level").order("category").order("title");
+    if (!error && data) setLibraryBooks(data.map(mapLibraryRow));
+  }
   async function refreshMyRecord(myProfileId) {
     const { data, error } = await supabaseClient.from("v_students").select("*").eq("profile_id", myProfileId).single();
     if (!error && data) {
@@ -2694,14 +2829,15 @@ function App() {
     if (error || !data) { setRequests([]); return; }
     const ids = [...new Set(data.map((request) => request.student_profile_id).filter(Boolean))];
     if (!ids.length) { setRequests(data); return; }
-    const { data: profiles } = await supabaseClient.from("profiles").select("id, full_name, name_ar").in("id", ids);
+    const { data: profiles } = await supabaseClient.from("profiles").select("id, username, full_name, name_ar").in("id", ids);
     const names = Object.fromEntries((profiles || []).map((profileRow) => [profileRow.id, profileRow]));
-    setRequests(data.map((request) => ({ ...request, student_name: names[request.student_profile_id]?.full_name || names[request.student_profile_id]?.name_ar || "" })));
+    setRequests(data.map((request) => ({ ...request, student_name: names[request.student_profile_id]?.full_name || names[request.student_profile_id]?.name_ar || "", student_code: names[request.student_profile_id]?.username || "" })));
   }
 
   async function submitStudentRequest(form) {
     const instructorProfileId = myRecord?.instructorId || null;
-    const { error } = await supabaseClient.from("student_requests").insert({ student_profile_id: myRecord.profileId, instructor_profile_id: instructorProfileId, request_type: form.requestType, details: form.details.trim() });
+    const referenceCode = `REF_${myRecord.id}_${Date.now().toString().slice(-6)}`;
+    const { error } = await supabaseClient.from("student_requests").insert({ student_profile_id: myRecord.profileId, instructor_profile_id: instructorProfileId, request_type: form.requestType, details: form.details.trim(), reference_code: referenceCode, payment_status: "pending" });
     if (error) return error.message;
     await refreshRequests("student", myRecord.profileId);
     return "تم إرسال الطلب بنجاح.";
@@ -2711,6 +2847,12 @@ function App() {
     const { error } = await supabaseClient.from("student_requests").update({ ...changes, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return;
     await refreshRequests(profile?.role, profile?.id);
+  }
+
+  async function deleteStudentRequest(id) {
+    if (!profile || !["admin", "instructor"].includes(profile.role)) return;
+    const { error } = await supabaseClient.from("student_requests").delete().eq("id", id);
+    if (!error) await refreshRequests(profile.role, profile.id);
   }
 
   async function addLog(action, details) {
@@ -2729,10 +2871,9 @@ function App() {
     if (p.role === "admin") {
       await Promise.all([refreshStudents(), refreshInstructors(), refreshAdmins(), refreshLog(), refreshRequests("admin", p.id)]);
     } else if (p.role === "instructor") {
-      await Promise.all([refreshMyStudents(p.id), refreshMyInstructor(p.id), refreshRequests("instructor", p.id)]);
+      await Promise.all([refreshMyStudents(p.id), refreshMyInstructor(p.id), refreshAttendance({ instructorProfileId: p.id }), refreshLibrary(), refreshRequests("instructor", p.id)]);
     } else if (p.role === "student") {
-      await refreshMyRecord(p.id);
-      await refreshRequests("student", p.id);
+      await Promise.all([refreshMyRecord(p.id), refreshAttendance({ studentProfileId: p.id }), refreshLibrary(), refreshRequests("student", p.id)]);
     }
     setLoading(false);
   }
@@ -2759,6 +2900,8 @@ function App() {
         setActivityLog([]);
         setMyStudents([]);
         setMyInstructor(null);
+        setAttendance([]);
+        setLibraryBooks([]);
         setMyRecord(null);
         setRequests([]);
         setLoading(false);
@@ -2814,6 +2957,7 @@ function App() {
           refreshLog={refreshLog}
           addLog={addLog}
           onUpdateRequest={updateStudentRequest}
+          onDeleteRequest={deleteStudentRequest}
           onLogout={requestLogout}
         />
       )}
@@ -2823,16 +2967,21 @@ function App() {
           profile={profile}
           instructor={myInstructor}
           students={myStudents}
+          attendance={attendance}
+          libraryBooks={libraryBooks}
+          refreshLibrary={refreshLibrary}
           requests={requests}
           refreshMyStudents={() => refreshMyStudents(profile.id)}
           refreshInstructor={refreshMyInstructor}
+          refreshAttendance={() => refreshAttendance({ instructorProfileId: profile.id })}
           onUpdateRequest={updateStudentRequest}
+          onDeleteRequest={deleteStudentRequest}
           onLogout={requestLogout}
         />
       )}
 
       {session && profile && profile.role === "student" && myRecord && (
-        <StudentPortal student={myRecord} requests={requests} onSubmitRequest={submitStudentRequest} onLogout={requestLogout} />
+        <StudentPortal student={myRecord} attendance={attendance} libraryBooks={libraryBooks} requests={requests} onSubmitRequest={submitStudentRequest} onLogout={requestLogout} />
       )}
       {showLogoutConfirm && <ConfirmActionModal title="تأكيد تسجيل الخروج" message="هل تريد تسجيل الخروج من النظام الآن؟" confirmLabel="تسجيل الخروج" onConfirm={() => { setShowLogoutConfirm(false); handleLogout(); }} onClose={() => setShowLogoutConfirm(false)} />}
     </div>
