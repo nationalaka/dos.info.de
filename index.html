@@ -2211,15 +2211,106 @@ function InfoCard({ labelAr, labelDe, children }) {
 }
 
 function PaymentMethodsCard() {
-  return <InfoCard labelAr="طرق الدفع المتاحة" labelDe="Verfügbare Zahlungsmethoden">
-    <p className="text-sm mb-3" style={{ color: COLORS.ink }}>يمكنك الدفع بالطريقة المناسبة لك، ثم إرسال طلب دفع من خانة الطلبات.</p>
-    <div className="space-y-3 text-sm" style={{ color: COLORS.ink }}>
-      <div className="border-t pt-2" style={{ borderColor: COLORS.border }}><strong>1. إنستاباي — InstaPay</strong><p className="text-xs mt-1" style={{ color: COLORS.subtle }}>الاسم: Ahmed Maher Hussein Ibrahim Badaar</p><a href="https://ipn.eg/S/dos-akademie/instapay/6XIGDu" target="_blank" rel="noreferrer" className="text-xs underline" style={{ color: COLORS.navy }}>فتح رابط الدفع المباشر</a><p className="text-xs" style={{ color: COLORS.subtle }}>الهاتف: 01148531423</p></div>
-      <div className="border-t pt-2" style={{ borderColor: COLORS.border }}><strong>2. فودافون كاش — Vodafone Cash</strong><p className="text-xs mt-1" style={{ color: COLORS.subtle }}>الاسم: Ahmed Maher Hussein Ibrahim Badaar · رقم المحفظة: 01014790783</p></div>
-      <div className="border-t pt-2" style={{ borderColor: COLORS.border }}><strong>3. اتصالات كاش — Etisalat Cash</strong><p className="text-xs mt-1" style={{ color: COLORS.subtle }}>الاسم: Ahmed Maher Hussein Ibrahim Badaar · رقم المحفظة: 01148531423</p></div>
-      <div className="border-t pt-2" style={{ borderColor: COLORS.border }}><strong>4. كاش — Cash</strong><p className="text-xs mt-1" style={{ color: COLORS.subtle }}>يرجى التنسيق مع الأكاديمية ثم إرسال طلب الدفع.</p></div>
-    </div>
-  </InfoCard>;
+  const [copied, setCopied] = React.useState(null);
+
+  const copyToClipboard = (text, id) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  const PhoneCopyButton = ({ phone, id }) => (
+    <button
+      onClick={() => copyToClipboard(phone, id)}
+      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-colors"
+      style={{
+        borderColor: COLORS.border,
+        color: copied === id ? "#16a34a" : COLORS.navy,
+        backgroundColor: copied === id ? "#f0fdf4" : "transparent"
+      }}
+    >
+      {copied === id ? (
+        <>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          تم النسخ
+        </>
+      ) : (
+        <>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+          {phone}
+        </>
+      )}
+    </button>
+  );
+
+  return (
+    <InfoCard labelAr="طرق الدفع المتاحة" labelDe="Verfügbare Zahlungsmethoden">
+      <p className="text-sm mb-4" style={{ color: COLORS.ink }}>
+        يمكنك الدفع بالطريقة المناسبة لك، ثم إرسال طلب دفع من خانة الطلبات.
+      </p>
+      <div className="space-y-4 text-sm" style={{ color: COLORS.ink }}>
+
+        {/* InstaPay */}
+        <div className="rounded-lg border p-3" style={{ borderColor: COLORS.border }}>
+          <div className="flex items-center justify-between mb-1">
+            <strong>1. إنستاباي — InstaPay</strong>
+          </div>
+          <p className="text-xs mb-3" style={{ color: COLORS.subtle }}>
+            الاسم: Ahmed Maher Hussein Ibrahim Badaar
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            
+              href="https://ipn.eg/S/dos-akademie/instapay/6XIGDu"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#7c3aed" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <path d="M2 10h20" />
+              </svg>
+              ادفع الآن عبر إنستاباي
+            </a>
+            <PhoneCopyButton phone="01148531423" id="instapay" />
+          </div>
+        </div>
+
+        {/* Vodafone Cash */}
+        <div className="rounded-lg border p-3" style={{ borderColor: COLORS.border }}>
+          <strong>2. فودافون كاش — Vodafone Cash</strong>
+          <p className="text-xs mt-1 mb-2" style={{ color: COLORS.subtle }}>
+            الاسم: Ahmed Maher Hussein Ibrahim Badaar
+          </p>
+          <PhoneCopyButton phone="01014790783" id="vodafone" />
+        </div>
+
+        {/* Etisalat Cash */}
+        <div className="rounded-lg border p-3" style={{ borderColor: COLORS.border }}>
+          <strong>3. اتصالات كاش — Etisalat Cash</strong>
+          <p className="text-xs mt-1 mb-2" style={{ color: COLORS.subtle }}>
+            الاسم: Ahmed Maher Hussein Ibrahim Badaar
+          </p>
+          <PhoneCopyButton phone="01148531423" id="etisalat" />
+        </div>
+
+        {/* Cash */}
+        <div className="rounded-lg border p-3" style={{ borderColor: COLORS.border }}>
+          <strong>4. كاش — Cash</strong>
+          <p className="text-xs mt-1" style={{ color: COLORS.subtle }}>
+            يرجى التنسيق مع الأكاديمية ثم إرسال طلب الدفع.
+          </p>
+        </div>
+
+      </div>
+    </InfoCard>
+  );
 }
 
 function LibraryPage({ books, initialLevel, editable, onAdd, onDelete }) {
