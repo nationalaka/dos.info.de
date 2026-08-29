@@ -1474,6 +1474,8 @@ function AdminDashboard({
         return;
       }
     }
+
+
     performNavigation(view, logAction, logDetails);
   }
 
@@ -1767,7 +1769,7 @@ function AdminDashboard({
                             <button
                               onClick={() => setModal({ mode: "edit", data: JSON.parse(JSON.stringify(s)) })}
                               className="p-1.5 rounded-lg hover:bg-gray-100"
-                              style={{ color: COLORS.navy }}
+                              style={{ color: COLORS.gold }}
                               title="تعديل"
                             >
                               <Icon.edit />
