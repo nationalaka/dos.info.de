@@ -705,7 +705,10 @@
         paymentType: readValue('f_paymentType') || 'نقدي — Cash',
         paymentAmount: Number(readValue('f_paymentAmount') || 0),
         currency: readValue('f_currency') || 'EGP',
-        notes: readValue('f_notes') || 'استلام نقدي للطالب — Cash receipt for student.',
+        notes: readValue('f_notes') || 'الشروط والأحكام
+الاسترداد: يحق استرداد المصروفات خلال 3 أيام من التسجيل وقبل بدء أول حصة، بخصم رسوم إدارية 10%. لا يُسترد الرسم بعد بدء الكورس.
+الحضور: الحد الأدنى للحضور 80% لاستلام شهادة إتمام المستوى. التأخر عن الحصة أكثر من 15 دقيقة يُحتسب غياباً.
+الالتزام: يلتزم الطالب بمواعيد السداد المتبقية حسب الاتفاق، ويحتفظ بحق الأكاديمية بإيقاف الخدمة عند التأخر دون تنسيق مسبق.',
         preparedBy: document.getElementById('preparedBy')?.textContent || 'Administration',
         accountName: document.getElementById('accountName')?.textContent || 'Buchhalter DOS',
         bankName: document.getElementById('bankName')?.textContent || 'DOS Cash / Bank',
@@ -730,7 +733,10 @@
       setText('paymentType', values.paymentType || 'نقدي — Cash');
       setText('paymentAmount', `${amount.toLocaleString('ar-EG', { maximumFractionDigits: 2 })} ${currency}`);
       setText('currencyValue', currency);
-      setText('notes', values.notes || 'استلام نقدي للطالب — Cash receipt for student.');
+      setText('notes', values.notes || 'استلام نقدي للطالب الشروط والأحكام
+الاسترداد: يحق استرداد المصروفات خلال 3 أيام من التسجيل وقبل بدء أول حصة، بخصم رسوم إدارية 10%. لا يُسترد الرسم بعد بدء الكورس.
+الحضور: الحد الأدنى للحضور 80% لاستلام شهادة إتمام المستوى. التأخر عن الحصة أكثر من 15 دقيقة يُحتسب غياباً.
+الالتزام: يلتزم الطالب بمواعيد السداد المتبقية حسب الاتفاق، ويحتفظ بحق الأكاديمية بإيقاف الخدمة عند التأخر دون تنسيق مسبق..');
       setText('preparedBy', values.preparedBy || 'Administration');
       setText('accountName', values.accountName || 'Buchhalter DOS');
       setText('bankName', values.bankName || 'DOS Cash / Bank');
@@ -783,7 +789,10 @@
         paymentType: readValue('f_paymentType') || 'نقدي — Cash',
         paymentAmount: Number(readValue('f_paymentAmount') || 0),
         currency: readValue('f_currency') || 'EGP',
-        notes: readValue('f_notes') || 'استلام نقدي للطالب — Cash receipt for student.',
+        notes: readValue('f_notes') || 'استلام نقدي للطالب الشروط والأحكام
+الاسترداد: يحق استرداد المصروفات خلال 3 أيام من التسجيل وقبل بدء أول حصة، بخصم رسوم إدارية 10%. لا يُسترد الرسم بعد بدء الكورس.
+الحضور: الحد الأدنى للحضور 80% لاستلام شهادة إتمام المستوى. التأخر عن الحصة أكثر من 15 دقيقة يُحتسب غياباً.
+الالتزام: يلتزم الطالب بمواعيد السداد المتبقية حسب الاتفاق، ويحتفظ بحق الأكاديمية بإيقاف الخدمة عند التأخر دون تنسيق مسبق.',
         preparedBy: document.getElementById('preparedBy')?.textContent || 'Administration',
         accountName: document.getElementById('accountName')?.textContent || 'Buchhalter DOS',
         bankName: document.getElementById('bankName')?.textContent || 'DOS Cash / Bank',
@@ -846,7 +855,10 @@
           paymentType: 'نقدي — Cash',
           paymentAmount: 0,
           currency: 'EGP',
-          notes: 'استلام نقدي للطالب — Cash receipt for student.',
+          notes: 'الشروط والأحكام
+الاسترداد: يحق استرداد المصروفات خلال 3 أيام من التسجيل وقبل بدء أول حصة، بخصم رسوم إدارية 10%. لا يُسترد الرسم بعد بدء الكورس.
+الحضور: الحد الأدنى للحضور 80% لاستلام شهادة إتمام المستوى. التأخر عن الحصة أكثر من 15 دقيقة يُحتسب غياباً.
+الالتزام: يلتزم الطالب بمواعيد السداد المتبقية حسب الاتفاق، ويحتفظ بحق الأكاديمية بإيقاف الخدمة عند التأخر دون تنسيق مسبق.',
           preparedBy: ''
         });
       }
