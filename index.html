@@ -1753,7 +1753,7 @@ function AdminDashboard({
                             <button
                               onClick={() => createStudentReceipt({ student: s, studentId: s.profileId || s.id, amount: s.financial.paid, currency: s.financial.currency, date: new Date().toISOString().slice(0, 10), description: "رسوم الكورس — Kursgebühr", paymentMethod: "student-account" })}
                               className="p-1.5 rounded-lg hover:bg-gray-100"
-                              style={{ color: COLORS.navy }}
+                              style={{ color: COLORS.gold }}
                               title="إيصال استلام نقدية"
                             >
                               <Icon.receipt />
@@ -1769,7 +1769,7 @@ function AdminDashboard({
                             <button
                               onClick={() => setModal({ mode: "edit", data: JSON.parse(JSON.stringify(s)) })}
                               className="p-1.5 rounded-lg hover:bg-gray-100"
-                              style={{ color: COLORS.gold }}
+                              style={{ color: COLORS.green }}
                               title="تعديل"
                             >
                               <Icon.edit />
